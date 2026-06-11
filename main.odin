@@ -3,11 +3,6 @@ package main
 import "core:fmt"
 
 main :: proc() {
-  tokens, ok := tokenise("(\\x. x) x")
-  if ok {
-    for tok in tokens {
-      fmt.println(tok)
-    }
-    delete(tokens)
-  }
+  term, ok := parse(`(\x. x) x`)
+  if ok do fmt.println(term_to_string(term))  // ((λx. x) x)
 }
