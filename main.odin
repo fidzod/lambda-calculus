@@ -1,5 +1,7 @@
 package main
 
+import "core:fmt"
+
 Term :: union {
   Var,
   Abs,
@@ -40,4 +42,6 @@ main :: proc() {
   app := new(Term)
   defer free(app)
   app^ = App{rator = abs, rand = x2}
+
+  fmt.println(term_to_string(app))  // ((λx. x) x)
 }
