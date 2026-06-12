@@ -1,0 +1,56 @@
+let tru = \x. \y. x
+let fls = \x. \y. y
+
+let and = \p. \q. p q fls
+let or = \p. \q. p tru q
+let not = \p. p fls tru
+
+let zero = \f. \x. x
+let one = \f. \x. f x
+let two = \f. \x. f (f x)
+let three = \f. \x. f (f (f x))
+let four = \f. \x. f (f (f (f x)))
+let five = \f. \x. f (f (f (f (f x))))
+
+let succ = \cn. \f. \x. f (cn f x)
+let plus = \m. \n. m succ n
+let mult = \m. \n. m (plus n) zero
+
+let pair = \x. \y. \f. f x y
+let fst = \p. p (\x. \y. x)
+let snd = \p. p (\x. \y. y)
+
+let slide = \p. pair (snd p) (succ (snd p))
+let dec = \cn. fst (cn slide (pair zero zero))
+let sub = \a. \b. b dec a
+
+let if = \cond. \csq. \alt. cond csq alt
+
+let zero? = \p. p (\x. fls) tru
+let eq? = \p. \q. and (is_zero (sub p q)) (is_zero (sub q p))
+let lte? = \p. \q. is_zero (sub p q)
+let gte? = \p. \q. is_zero (sub q p)
+
+let nil = pair tru tru
+let nil? = \l. fst l
+let cons = \h. \t. pair fls (pair h t)
+let head = \l. fst (snd l)
+let tail = \l. snd (snd l)
+
+let nth = \l. \n. head (n tail l)
+
+let Y = \f. (\x. f (x x)) (\x. f (x x))
+
+let fact = Y (\go. \n. if (is_zero n) one (mult n (go (dec n))))
+
+let fold = Y (\go. \l. \a. \f. if (is_nil l) a (go (tail l) (f a (head l)) (f)))
+
+let len = \l. fold l zero (\a. \x. succ a)
+let rev = \l. fold l nil (\a. \x. cons x a)
+
+let foldr = \l. \a. \f. fold (rev l) a f
+let map = \l. \f. foldr l nil (\a. \x. cons (f x) a)
+
+let filter = \l. \p. foldr l nil (\a. \x. if (p x) (cons x a) a)
+
+let append = \l. \m. foldr l m (\a. \x. cons x a)
