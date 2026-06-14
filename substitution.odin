@@ -15,11 +15,11 @@ is_free :: proc(name: string, term: ^Term) -> bool {
     return var.name == name
   }
   else if abs, ok := term.(Abs); ok {
-    // FV(M₁ M₂) = FV(M₁) ⋃ FV(M₂)
+    // FV(λx.M) = FV(M)\{x}
     return is_free(name, abs.body) && name != abs.param
   }
   else if app, ok := term.(App); ok {
-    // FV(λx.M) = FV(M)\{x}
+    // FV(M₁ M₂) = FV(M₁) ⋃ FV(M₂)
     return is_free(name, app.rand) || is_free(name, app.rator)
   }
   unreachable()

@@ -27,9 +27,9 @@ let sub = \a. \b. b dec a
 let if = \cond. \csq. \alt. cond csq alt
 
 let zero? = \p. p (\x. fls) tru
-let eq? = \p. \q. and (is_zero (sub p q)) (is_zero (sub q p))
-let lte? = \p. \q. is_zero (sub p q)
-let gte? = \p. \q. is_zero (sub q p)
+let eq? = \p. \q. and (zero? (sub p q)) (zero? (sub q p))
+let lte? = \p. \q. zero? (sub p q)
+let gte? = \p. \q. zero? (sub q p)
 
 let nil = pair tru tru
 let nil? = \l. fst l
@@ -41,9 +41,9 @@ let nth = \l. \n. head (n tail l)
 
 let Y = \f. (\x. f (x x)) (\x. f (x x))
 
-let fact = Y (\go. \n. if (is_zero n) one (mult n (go (dec n))))
+let fact = Y (\go. \n. if (zero? n) one (mult n (go (dec n))))
 
-let fold = Y (\go. \l. \a. \f. if (is_nil l) a (go (tail l) (f a (head l)) (f)))
+let fold = Y (\go. \l. \a. \f. if (nil? l) a (go (tail l) (f a (head l)) (f)))
 
 let len = \l. fold l zero (\a. \x. succ a)
 let rev = \l. fold l nil (\a. \x. cons x a)

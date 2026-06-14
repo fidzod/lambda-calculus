@@ -33,7 +33,7 @@ reduce_step :: proc(term: ^Term) -> (^Term, bool) {
   unreachable()
 }
 
-reduce :: proc(term: ^Term, max_steps := 10000) -> (^Term, bool) {
+reduce :: proc(term: ^Term, max_steps := 100000) -> (^Term, bool) {
   current := term
   for i in 0..<max_steps {
     next, ok := reduce_step(current)

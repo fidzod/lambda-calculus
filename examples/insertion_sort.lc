@@ -1,0 +1,7 @@
+import ../std
+
+let insert = Y (\go. \n. \l. if (nil? l) (cons n nil) (if (lte? n (head l)) (cons n l) (cons (head l) (go n (tail l)))))
+
+let sort = Y (\go. \l. if (nil? l) nil (insert (head l) (go (tail l))))
+
+let sorted = sort (cons three (cons two (cons five (cons four nil))))
