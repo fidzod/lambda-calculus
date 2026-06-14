@@ -5,7 +5,7 @@ import "core:fmt"
 type_to_string :: proc(type: ^Type) -> string {
 	if b, ok := type.(TypeBase); ok do return b.name
 	a, _ := type.(TypeArrow)
-	return fmt.tprintf("%s->%s", type_to_string(a.domain), type_to_string(a.codomain))
+	return fmt.tprintf("(%s->%s)", type_to_string(a.domain), type_to_string(a.codomain))
 }
 
 term_to_string :: proc(term: ^Term) -> string {
