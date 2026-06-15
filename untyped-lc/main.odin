@@ -5,7 +5,13 @@ import "core:os"
 
 main :: proc() {
 	env := make(map[string]string)
-	defer delete(env)
+	defer {
+    for key, value in env {
+      delete(key)
+      delete(value)
+    }
+    delete(env)
+  }
 
 	args := os.args[1:]
 

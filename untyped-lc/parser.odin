@@ -85,8 +85,7 @@ can_start_atom :: proc(p: ^Parser) -> bool {
 }
 
 parse_term :: proc(p: ^Parser) -> (^Term, bool) {
-	_, isTLambda := peek(p).(TLambda)
-	if isTLambda do return parse_abs(p)
+	if _, isTLambda := peek(p).(TLambda); isTLambda do return parse_abs(p)
 	return parse_app(p)
 }
 

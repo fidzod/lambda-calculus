@@ -1,4 +1,4 @@
-import ../std
+import std
 
 let insert = Y (\go. \n. \l. if (nil? l) (cons n nil) (if (lte? n (head l)) (cons n l) (cons (head l) (go n (tail l)))))
 

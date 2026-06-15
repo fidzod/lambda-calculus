@@ -3,14 +3,13 @@ package main
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:mem"
 
 expand :: proc(input: string, env: map[string]string) -> string {
 	tokens, tokenise_ok := tokenise(input)
 	if !tokenise_ok do return input
-	defer delete(tokens)
 
 	expanded := make([dynamic]string)
-	defer delete(expanded)
 
 	for tok in tokens {
 		switch t in tok {
@@ -35,20 +34,29 @@ expand :: proc(input: string, env: map[string]string) -> string {
 }
 
 eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
+  heap_allocator := context.allocator
+
+  arena_mem := make([]byte, 4*mem.Megabyte, heap_allocator)
+  arena: mem.Arena
+  mem.arena_init(&arena, arena_mem)
+  defer delete(arena_mem, heap_allocator)
+
+  context.allocator = mem.arena_allocator(&arena)
+
 	trimmed := strings.trim_space(line)
 	if trimmed == "" do return "", true
 
 	fields := strings.fields(trimmed)
-	defer delete(fields)
 
 	if fields[0] == "let" {
 		if len(fields) < 4 || fields[2] != "=" {
 			fmt.eprintln("Error: invalid let syntax")
 			return "", false
 		}
-		name := strings.clone(fields[1])
-		body := strings.join(fields[3:], " ")
+		name := strings.clone(fields[1], heap_allocator)
+		body := strings.join(fields[3:], " ", heap_allocator)
 		expanded := expand(body, env^)
+    delete(body, heap_allocator)
 
     term, parse_ok := parse(expanded)
     if !parse_ok {
@@ -56,17 +64,7 @@ eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
       return "", false
     }
 
-		env[name] = expanded
-		return "", true
-	}
-
-	if fields[0] == "import" {
-		if len(fields) < 2 {
-			fmt.eprintln("Error: invalid import syntax")
-			return "", false
-		}
-		path := fmt.tprintf("%s.lc", fields[1])
-		if !load_file(path, env) do return "", false
+		env[name] = strings.clone(expanded, heap_allocator)
 		return "", true
 	}
 
@@ -85,24 +83,43 @@ eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
 		return "", false
 	}
 
-	return term_to_string(reduced), true
+  result := strings.clone(term_to_string(reduced), heap_allocator)
+	return result, true
 }
 
 load_file :: proc(path: string, env: ^map[string]string) -> bool {
-	data, err := os.read_entire_file(path, context.allocator)
-	if err != os.ERROR_NONE {
-		fmt.eprintln("Error: could not read file:", path)
-		return false
-	}
-	defer delete(data)
+    data, err := os.read_entire_file(path, context.allocator)
+    if err != os.ERROR_NONE {
+        fmt.eprintln("Error: could not read file:", path)
+        return false
+    }
+    defer delete(data)
 
-	lines := strings.split_lines(string(data))
-	defer delete(lines)
+    lines := strings.split_lines(string(data))
+    defer delete(lines)
 
-	for line in lines {
-		result, eval_ok := eval_line(line, env)
-		if !eval_ok do return false
-		if result != "" do fmt.println(result)
-	}
-	return true
+    for line, ln in lines {
+        trimmed := strings.trim_space(line)
+        fields := strings.fields(trimmed)
+        defer delete(fields)
+        if len(fields) == 0 do continue
+        if fields[0] == "import" {
+            if len(fields) < 2 {
+                fmt.eprintln("Error: invalid import syntax")
+                return false
+            }
+            import_path := fmt.tprintf("%s.lc", fields[1])
+            if !load_file(import_path, env) do return false
+            continue
+        }
+        result, eval_ok := eval_line(line, env)
+        if !eval_ok {
+            fmt.eprintfln("Error on line %d", ln)
+            return false
+        }
+        if result != "" do fmt.println(result)
+    }
+
+    return true
 }
+
