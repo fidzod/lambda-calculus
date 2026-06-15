@@ -5,33 +5,33 @@ import "core:os"
 import "core:strings"
 
 expand :: proc(input: string, env: map[string]string) -> string {
-	tokens, ok := tokenise(input)
-	if !ok do return input
+	tokens, tokenise_ok := tokenise(input)
+	if !tokenise_ok do return input
 	defer delete(tokens)
 
-	result := make([dynamic]string)
-	defer delete(result)
+	expanded := make([dynamic]string)
+	defer delete(expanded)
 
 	for tok in tokens {
 		switch t in tok {
 		case TName:
 			if t.value in env {
-				append(&result, fmt.tprintf("(%s)", env[t.value]))
+				append(&expanded, fmt.tprintf("(%s)", env[t.value]))
 			} else {
-				append(&result, t.value)
+				append(&expanded, t.value)
 			}
 		case TLParen:
-			append(&result, "(")
+			append(&expanded, "(")
 		case TRParen:
-			append(&result, ")")
+			append(&expanded, ")")
 		case TLambda:
-			append(&result, "\\")
+			append(&expanded, "\\")
 		case TDot:
-			append(&result, ".")
+			append(&expanded, ".")
 		case TEOF:
 		}
 	}
-	return strings.join(result[:], " ")
+	return strings.join(expanded[:], " ")
 }
 
 eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
@@ -49,6 +49,13 @@ eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
 		name := strings.clone(fields[1])
 		body := strings.join(fields[3:], " ")
 		expanded := expand(body, env^)
+
+    term, parse_ok := parse(expanded)
+    if !parse_ok {
+      fmt.eprintln("Error: failed to parse let expression body")
+      return "", false
+    }
+
 		env[name] = expanded
 		return "", true
 	}
@@ -64,13 +71,20 @@ eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
 	}
 
 	expanded := expand(trimmed, env^)
-	term, ok := parse(expanded)
-	if !ok do return "", false
-	reduced, ok2 := reduce(term)
-	if !ok2 {
+
+	term, parse_ok := parse(expanded)
+	if !parse_ok do return "", false
+	if !parse_ok {
+		fmt.eprintln("Error: failed to parse")
+		return "", false
+	}
+
+	reduced, reduce_ok := reduce(term)
+	if !reduce_ok {
 		fmt.eprintln("Error: no normal form found")
 		return "", false
 	}
+
 	return term_to_string(reduced), true
 }
 
@@ -86,8 +100,8 @@ load_file :: proc(path: string, env: ^map[string]string) -> bool {
 	defer delete(lines)
 
 	for line in lines {
-		result, ok := eval_line(line, env)
-		if !ok do return false
+		result, eval_ok := eval_line(line, env)
+		if !eval_ok do return false
 		if result != "" do fmt.println(result)
 	}
 	return true
