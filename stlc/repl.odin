@@ -13,6 +13,9 @@ repl :: proc(env: ^map[string]string) {
 		input := strings.trim_right(string(buf[:n]), "\n\r")
 		if input == "quit" do break
 		result, ok := eval_line(input, env)
-		if ok && result != "" do fmt.println(result)
+		if ok && result != "" {
+      fmt.println(result)
+      delete(result)
+    }
 	}
 }
