@@ -51,26 +51,28 @@ parse_atom :: proc(p: ^Parser) -> (^Term, bool) {
 }
 
 parse_type :: proc(p: ^Parser) -> (^Type, bool) {
-  name, ok := peek(p).(TName)
-  if !ok do return nil, false
+  domain: ^Type; ok: bool
 
-  advance(p)
-  base := new(Type)
-  base^ = TypeBase{ name = name.value }
-
-  if _, ok1 := peek(p).(TArrow); !ok1 do return base, true
-
-  advance(p)
-  codomain, ok2 := parse_type(p)
-
-  if !ok2 do return nil, false
-
-  arrow := new(Type)
-  arrow^ = TypeArrow{
-    domain = base,
-    codomain = codomain
+  if _, is_lparen := peek(p).(TLParen); is_lparen {
+    advance(p)
+    domain, ok = parse_type(p)
+    if !ok do return nil, false
+    if !expect(p, TRParen) do return nil, false
+  } else {
+    name, is_name := peek(p).(TName)
+    if !is_name do return nil, false
+    advance(p)
+    base := new(Type)
+    base^ = TypeBase{name = name.value}
+    domain = base
   }
 
+  if _, ok1 := peek(p).(TArrow); !ok1 do return domain, true
+  advance(p)
+  codomain, ok2 := parse_type(p)
+  if !ok2 do return nil, false
+  arrow := new(Type)
+  arrow^ = TypeArrow{ domain = domain, codomain = codomain }
   return arrow, true
 }
 
