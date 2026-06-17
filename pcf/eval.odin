@@ -39,7 +39,7 @@ expand :: proc(input: string, env: map[string]string) -> string {
 	return strings.join(expanded[:], " ")
 }
 
-eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
+eval_line :: proc(line: string, env: ^map[string]string, quiet: bool = false) -> (string, bool) {
 	heap_allocator := context.allocator
 
 	arena_mem := make([]byte, 400 * mem.Megabyte, heap_allocator)
@@ -77,7 +77,7 @@ eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
 			return "", false
 		}
 
-		fmt.printfln("%s = %s : %s", name, term_to_string(term), type_to_string(type))
+		if !quiet do fmt.printfln("%s = %s : %s", name, term_to_string(term), type_to_string(type))
 
 		env[name] = strings.clone(expanded, heap_allocator)
 		return "", true
@@ -112,7 +112,7 @@ eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
 flush :: proc(buf: string, env: ^map[string]string, ln: int) -> bool {
 	trimmed := strings.trim_space(buf)
 	if trimmed == "" do return true
-	result, ok := eval_line(trimmed, env)
+	result, ok := eval_line(trimmed, env, true)
 	if !ok {
 		fmt.eprintfln("Error on line %d", ln)
 		return false
