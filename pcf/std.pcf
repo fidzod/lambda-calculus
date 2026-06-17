@@ -1,13 +1,28 @@
-let add = fix (\go: Nat->Nat->Nat. \m:Nat. \n:Nat. if (iszero m) then n else (succ (go (pred m) n)))
-let mult = fix (\go: Nat->Nat->Nat. \m:Nat. \n:Nat. if (iszero m) then 0 else (add (go (pred m) n) n))
+let add = fix (\go: Nat->Nat->Nat. \m:Nat. \n:Nat.
+  if (iszero m)
+    then n
+    else (succ (go (pred m) n)))
+
+let mult = fix (\go: Nat->Nat->Nat. \m:Nat. \n:Nat.
+  if (iszero m)
+    then 0
+    else (add (go (pred m) n) n))
+
 let sqr = \x: Nat. mult x x
-let fact = fix (\go: Nat->Nat. \n: Nat. if (iszero n) then (1) else (mult n (go (pred n))))
+
+let fact = fix (\go: Nat->Nat. \n: Nat.
+  if (iszero n)
+    then (1)
+    else (mult n (go (pred n))))
 
 let pair = \x: Nat. \y: Nat. \f: Nat->Nat->Nat. f x y
 let fst = \x: Nat. \y: Nat. x
 let snd = \x: Nat. \y: Nat. y
 
-let sub = fix (\go: Nat->Nat->Nat. \m:Nat. \n:Nat. if (iszero m) then n else (pred (go (pred m) n)))
+let sub = fix (\go: Nat->Nat->Nat. \m:Nat. \n:Nat.
+  if (iszero m)
+    then n
+    else (pred (go (pred m) n)))
 
 let and = \x: Bool. \y: Bool. if x then y else x
 let or = \x: Bool. \y: Bool. if x then x else y

@@ -1,9 +1,9 @@
 package main
 
 import "core:fmt"
+import "core:mem"
 import "core:os"
 import "core:strings"
-import "core:mem"
 
 expand :: proc(input: string, env: map[string]string) -> string {
 	tokens, tokenise_ok := tokenise(input)
@@ -19,8 +19,8 @@ expand :: proc(input: string, env: map[string]string) -> string {
 			} else {
 				append(&expanded, t.value)
 			}
-    case TNumber:
-      append(&expanded, fmt.tprintf("%d", t.value))
+		case TNumber:
+			append(&expanded, fmt.tprintf("%d", t.value))
 		case TLParen:
 			append(&expanded, "(")
 		case TRParen:
@@ -29,10 +29,10 @@ expand :: proc(input: string, env: map[string]string) -> string {
 			append(&expanded, "\\")
 		case TDot:
 			append(&expanded, ".")
-    case TColon:
-      append(&expanded, ":")
-    case TArrow:
-      append(&expanded, "->")
+		case TColon:
+			append(&expanded, ":")
+		case TArrow:
+			append(&expanded, "->")
 		case TEOF:
 		}
 	}
@@ -40,14 +40,14 @@ expand :: proc(input: string, env: map[string]string) -> string {
 }
 
 eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
-  heap_allocator := context.allocator
+	heap_allocator := context.allocator
 
-  arena_mem := make([]byte, 400*mem.Megabyte, heap_allocator)
-  arena: mem.Arena
-  mem.arena_init(&arena, arena_mem)
-  defer delete(arena_mem, heap_allocator)
+	arena_mem := make([]byte, 400 * mem.Megabyte, heap_allocator)
+	arena: mem.Arena
+	mem.arena_init(&arena, arena_mem)
+	defer delete(arena_mem, heap_allocator)
 
-  context.allocator = mem.arena_allocator(&arena)
+	context.allocator = mem.arena_allocator(&arena)
 
 	trimmed := strings.trim_space(line)
 	if trimmed == "" do return "", true
@@ -62,22 +62,22 @@ eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
 		name := strings.clone(fields[1], heap_allocator)
 		body := strings.join(fields[3:], " ", heap_allocator)
 		expanded := expand(body, env^)
-    delete(body, heap_allocator)
+		delete(body, heap_allocator)
 
-    term, parse_ok := parse(expanded)
-    if !parse_ok {
-      fmt.eprintln("Error: failed to parse let expression body")
-      return "", false
-    }
+		term, parse_ok := parse(expanded)
+		if !parse_ok {
+			fmt.eprintln("Error: failed to parse let expression body")
+			return "", false
+		}
 
-    ctx := make(map[string]^Type)
-    type, typecheck_ok := typecheck(ctx, term)
-    if !typecheck_ok {
-      fmt.eprintln("Error: typecheck failed")
-      return "", false
-    }
+		ctx := make(map[string]^Type)
+		type, typecheck_ok := typecheck(ctx, term)
+		if !typecheck_ok {
+			fmt.eprintln("Error: typecheck failed")
+			return "", false
+		}
 
-    fmt.printfln("%s = %s : %s", name, term_to_string(term), type_to_string(type))
+		fmt.printfln("%s = %s : %s", name, term_to_string(term), type_to_string(type))
 
 		env[name] = strings.clone(expanded, heap_allocator)
 		return "", true
@@ -92,12 +92,12 @@ eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
 		return "", false
 	}
 
-  ctx := make(map[string]^Type)
-  type, typecheck_ok := typecheck(ctx, term)
-  if !typecheck_ok {
-    fmt.eprintln("Error: typecheck failed")
-    return "", false
-  }
+	ctx := make(map[string]^Type)
+	type, typecheck_ok := typecheck(ctx, term)
+	if !typecheck_ok {
+		fmt.eprintln("Error: typecheck failed")
+		return "", false
+	}
 
 	reduced, reduce_ok := reduce(term)
 	if !reduce_ok {
@@ -105,43 +105,47 @@ eval_line :: proc(line: string, env: ^map[string]string) -> (string, bool) {
 		return "", false
 	}
 
-  result := strings.clone(term_to_string(reduced), heap_allocator)
+	result := strings.clone(term_to_string(reduced), heap_allocator)
 	return result, true
 }
 
-load_file :: proc(path: string, env: ^map[string]string) -> bool {
-    data, err := os.read_entire_file(path, context.allocator)
-    if err != os.ERROR_NONE {
-        fmt.eprintln("Error: could not read file:", path)
-        return false
-    }
-    defer delete(data)
-
-    lines := strings.split_lines(string(data))
-    defer delete(lines)
-
-    for line, ln in lines {
-        trimmed := strings.trim_space(line)
-        fields := strings.fields(trimmed)
-        defer delete(fields)
-        if len(fields) == 0 do continue
-        if fields[0] == "import" {
-            if len(fields) < 2 {
-                fmt.eprintln("Error: invalid import syntax")
-                return false
-            }
-            import_path := fmt.tprintf("%s.lc", fields[1])
-            if !load_file(import_path, env) do return false
-            continue
-        }
-        result, eval_ok := eval_line(line, env)
-        if !eval_ok {
-            fmt.eprintfln("Error on line %d", ln)
-            return false
-        }
-        if result != "" do fmt.println(result)
-    }
-
-    return true
+flush :: proc(buf: string, env: ^map[string]string, ln: int) -> bool {
+	trimmed := strings.trim_space(buf)
+	if trimmed == "" do return true
+	result, ok := eval_line(trimmed, env)
+	if !ok {
+		fmt.eprintfln("Error on line %d", ln)
+		return false
+	}
+	if result != "" do fmt.println(result)
+	return true
 }
 
+load_file :: proc(path: string, env: ^map[string]string) -> bool {
+	data, err := os.read_entire_file(path, context.allocator)
+	if err != os.ERROR_NONE {
+		fmt.eprintln("Error: could not read file:", path)
+		return false
+	}
+	defer delete(data)
+
+	lines := strings.split_lines(string(data))
+	defer delete(lines)
+
+	buffer := ""
+	line_start := 0
+
+	for line, ln in lines {
+		is_continuation := len(line) > 0 && (line[0] == ' ' || line[0] == '\t')
+		if is_continuation {
+			buffer = strings.join({buffer, line}, " ")
+		} else {
+			if !flush(buffer, env, line_start) do return false
+			buffer = line
+			line_start = ln
+		}
+	}
+	if !flush(buffer, env, line_start) do return false
+
+	return true
+}
