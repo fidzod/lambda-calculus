@@ -22,7 +22,7 @@ let snd = \x: Nat. \y: Nat. y
 let sub = fix (\go: Nat->Nat->Nat. \m:Nat. \n:Nat.
   if (iszero n)
     then m
-    else (pred (go (pred n) m)))
+    else (go (pred m) (pred n)))
 
 let and = \x: Bool. \y: Bool. if x then y else x
 let or = \x: Bool. \y: Bool. if x then x else y
