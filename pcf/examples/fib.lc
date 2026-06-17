@@ -1,0 +1,6 @@
+import std
+
+let fib = fix (\go: Nat->Nat. \n: Nat.
+  if (lte n 1)
+    then n 
+    else (add (go (pred n)) (go (sub n 2))))
