@@ -1,0 +1,20 @@
+let add = fix (\go: Nat->Nat->Nat. \m:Nat. \n:Nat. if (iszero m) then n else (succ (go (pred m) n)))
+let mult = fix (\go: Nat->Nat->Nat. \m:Nat. \n:Nat. if (iszero m) then 0 else (add (go (pred m) n) n))
+let sqr = \x: Nat. mult x x
+let fact = fix (\go: Nat->Nat. \n: Nat. if (iszero n) then (1) else (mult n (go (pred n))))
+
+let pair = \x: Nat. \y: Nat. \f: Nat->Nat->Nat. f x y
+let fst = \x: Nat. \y: Nat. x
+let snd = \x: Nat. \y: Nat. y
+
+let sub = fix (\go: Nat->Nat->Nat. \m:Nat. \n:Nat. if (iszero m) then n else (pred (go (pred m) n)))
+
+let and = \x: Bool. \y: Bool. if x then y else x
+let or = \x: Bool. \y: Bool. if x then x else y
+let not = \x: Bool. if x then false else true
+
+let eqnat = \p: Nat. \q: Nat. and (iszero (sub q p)) (iszero (sub p q))
+let lte = \p: Nat. \q: Nat. iszero (sub q p)
+let lt = \p: Nat. \q: Nat. and (lte p q) (not (eqnat p q))
+let gte = \p: Nat. \q: Nat. iszero (sub p q)
+let gt = \p: Nat. \q: Nat. and (gte p q) (not (eqnat p q))
